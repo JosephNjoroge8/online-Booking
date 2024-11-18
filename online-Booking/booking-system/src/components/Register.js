@@ -1,47 +1,60 @@
 import React, { useState } from 'react';
-import { registerUser } from '../api'; // Ensure this API call is correctly set up to send a POST request to your Flask backend
+import axios from 'axios'; // Import axios
 
 function Register() {
-  const [formData, setFormData] = useState({
-    full_name: '',
+  // State for form data
+  const [userData, setUserData] = useState({
     id_number: '',
-    dob: '',
-    phone_number: '',
-    image_url: null, // Start with null for file upload
-    community: '',
-    talent_group: '',
-    education_level: '',
-    course: '',
-    employment_status: '',
+    full_name: '',
     email: '',
+    parish: '',
     password: '',
   });
 
+  // Handle form field changes
   const handleChange = (e) => {
-    if (e.target.type === 'file') {
-      setFormData({ ...formData, image_url: e.target.files[0] }); // Set the file object
-    } else {
-      setFormData({ ...formData, [e.target.name]: e.target.value });
-    }
+    setUserData({ ...userData, [e.target.name]: e.target.value });
   };
-
+ 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Create a FormData object to handle the data (including the file)
-    const data = new FormData();
-    for (const key in formData) {
-      if (formData[key]) {
-        data.append(key, formData[key]);
+  
+    // Log the user data to verify it's being populated correctly
+    console.log('User Data before submission:', userData);
+  
+    // Check if all required fields are filled
+    if (!userData.full_name || !userData.id_number || !userData.email || !userData.parish || !userData.password) {
+      alert('Please fill all required fields.');
+      return;
+    }
+  
+    // Create FormData object for sending multipart/form-data
+    const formData = new FormData();
+    for (const key in userData) {
+      if (userData[key]) {
+        formData.append(key, userData[key]);
+      } else {
+        console.error(`Missing field: ${key}`);
       }
     }
-
+  
+    // Log the FormData to ensure it is correctly formatted
+    for (let pair of formData.entries()) {
+      console.log(pair[0]+ ', ' + pair[1]);
+    }
+  
     try {
-      const response = await registerUser(data); // Pass FormData to the API
-      alert(response.data.message); // Success message from the backend
+      // Call the register API to register the user
+      const response = await axios.post('http://127.0.0.1:5000/register', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',  // Ensure the correct header for FormData
+        },
+      });
+      alert(response.data.message); // Show success message
     } catch (error) {
-      console.error("Error registering user:", error);
-      alert("Registration failed. Please try again.");
+      console.error('Error registering user:', error);
+      alert('Registration failed. Please try again.');
     }
   };
 
@@ -49,103 +62,44 @@ function Register() {
     <form onSubmit={handleSubmit} className="p-4 bg-blue-50 rounded shadow-emerald-100">
       <input
         type="text"
-        name="full_name"
-        value={formData.full_name}
-        onChange={handleChange}
-        placeholder="Full Name"
-        className="p-2 border rounded mb-2 w-full"
-        required
-      />
-      <input
-        type="number"
         name="id_number"
-        value={formData.id_number}
+        value={userData.id_number}
         onChange={handleChange}
         placeholder="ID Number"
         className="p-2 border rounded mb-2 w-full"
         required
       />
       <input
-        type="date"
-        name="dob"
-        value={formData.dob}
-        onChange={handleChange}
-        className="p-2 border rounded mb-2 w-full"
-        required
-      />
-      <input
-        type="number"
-        name="phone_number"
-        value={formData.phone_number}
-        onChange={handleChange}
-        placeholder="Phone Number"
-        className="p-2 border rounded mb-2 w-full"
-        required
-      />
-      <input
-        type="file"
-        name="image_url"
-        onChange={handleChange}
-        className="p-2 border rounded mb-2 w-full"
-      />
-      <input
         type="text"
-        name="talent_group"
-        value={formData.talent_group}
+        name="full_name"
+        value={userData.full_name}
         onChange={handleChange}
-        placeholder="Talent Group"
-        className="p-2 border rounded mb-2 w-full"
-        required
-      />
-      <input
-        type="text"
-        name="education_level"
-        value={formData.education_level}
-        onChange={handleChange}
-        placeholder="Education Level"
-        className="p-2 border rounded mb-2 w-full"
-        required
-      />
-      <input
-        type="text"
-        name="course"
-        value={formData.course}
-        onChange={handleChange}
-        placeholder="Course"
-        className="p-2 border rounded mb-2 w-full"
-        required
-      />
-      <input
-        type="text"
-        name="employment_status"
-        value={formData.employment_status}
-        onChange={handleChange}
-        placeholder="Employment Status"
-        className="p-2 border rounded mb-2 w-full"
-        required
-      />
-      <input
-        type="text"
-        name="community"
-        value={formData.community}
-        onChange={handleChange}
-        placeholder="Community"
+        placeholder="Full Name"
         className="p-2 border rounded mb-2 w-full"
         required
       />
       <input
         type="email"
         name="email"
-        value={formData.email}
+        value={userData.email}
         onChange={handleChange}
         placeholder="Email"
         className="p-2 border rounded mb-2 w-full"
         required
       />
       <input
+        type="text"
+        name="parish"
+        value={userData.parish}
+        onChange={handleChange}
+        placeholder="Parish"
+        className="p-2 border rounded mb-2 w-full"
+        required
+      />
+      <input
         type="password"
         name="password"
-        value={formData.password}
+        value={userData.password}
         onChange={handleChange}
         placeholder="Password"
         className="p-2 border rounded mb-2 w-full"

@@ -1,61 +1,117 @@
 import axios from 'axios';
 
-// Define the base URL of your Flask API
-const API_URL = 'http://127.0.0.1:5000'; // Ensure there are no spaces or typos here
+// Base URL for the API
+const API_URL = 'http://127.0.0.1:5000';
 
-// Function to register a new user
-export const registerUser = async (userData) => {
-  try {
-    // Create a new FormData object
-    const formData = new FormData();
+// Create an axios instance with default configuration
+const apiClient = axios.create({
+  baseURL: API_URL,
+  timeout: 15000, // 15 seconds timeout
+  headers: {
+    Accept: 'application/json',
+  },
+});
 
-    // Loop through the userData and append each field to the FormData object
-    for (const key in userData) {
-      if (userData[key]) {
-        formData.append(key, userData[key]);
-      }
-    }
-
-    // Send the formData as a POST request with 'Content-Type': 'multipart/form-data'
-    const response = await axios.post(`${API_URL}/register`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data', // Required for file upload
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Error registering user:", error);
-    throw error;
+// Error handling function
+const handleApiError = (error) => {
+  if (error.response) {
+    // Server responded with a status outside the 2xx range
+    const errorMessage = error.response.data.error || 'An error occurred';
+    throw new Error(errorMessage);
+  } else if (error.request) {
+    // No response received from the server
+    throw new Error('No response from server. Please check your connection.');
+  } else {
+    // Request setup triggered an error
+    throw new Error('Error setting up request. Please try again.');
   }
 };
 
-// Other API functions remain the same...
+// Function to register a new user (No image handling)
+export const registerUser = async (userData) => {
+  try {
+    const formData = new FormData();
+    
+    // Append data to FormData object
+    formData.append('full_name', userData.full_name);
+    formData.append('id_number', userData.id_number);
+    formData.append('email', userData.email);
+    formData.append('parish', userData.parish);
+    formData.append('password', userData.password);
 
+    // Directly use axios to post the formData
+    const response = await axios.post('http://127.0.0.1:5000/register', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data', // Ensure correct content type for FormData
+      },
+    });
+
+    return response.data;  // Return response data
+  } catch (error) {
+    console.error('Error occurred during registration:', error);
+    handleApiError(error);  // Call the error handler
+    throw error; // Re-throw the error for further handling
+  }
+};
 
 // Function to log in a user
 export const loginUser = async (credentials) => {
   try {
-    const response = await axios.post(`${API_URL}/login`, credentials);
+    const response = await apiClient.post('/login', credentials);
     return response.data;
   } catch (error) {
-    console.error("Error logging in:", error);
-    throw error;
+    handleApiError(error);
   }
 };
 
-// Function to get all bookings (for admin use)
-export const getBookings = async (token) => {
+// Function to get user profile
+export const getUserProfile = async (userId, token) => {
   try {
-    const response = await axios.get(`${API_URL}/bookings`, {
+    const response = await apiClient.get(`/users/${userId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
     return response.data;
   } catch (error) {
-    console.error("Error fetching bookings:", error);
-    throw error;
+    handleApiError(error);
   }
 };
 
-// Add more API functions as needed
+// Function to update user profile
+export const updateUserProfile = async (userId, userData, token) => {
+  try {
+    let data;
+    let headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+
+    // If updating with a file, use FormData
+    if (userData.image_url) {
+      data = new FormData();
+      Object.keys(userData).forEach((key) => {
+        if (userData[key] !== null && userData[key] !== undefined) {
+          data.append(key, userData[key]);
+        }
+      });
+      headers['Content-Type'] = 'multipart/form-data';
+    } else {
+      // Use JSON for text data
+      data = userData;
+    }
+
+    // Send PUT request to update the user profile
+    const response = await apiClient.put(`/users/${userId}`, data, { headers });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
+
+// Export all functions as part of the api object
+const api = {
+  registerUser,
+  loginUser,
+  getUserProfile,
+  updateUserProfile,
+};
+
+export default api;
