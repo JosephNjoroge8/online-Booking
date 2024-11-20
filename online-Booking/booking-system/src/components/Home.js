@@ -1,19 +1,10 @@
-// src/components/Home.js
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import UserDashboard from './UserDashboard';
-
-// A mock authentication function to check if the user is logged in
-// Replace this with actual authentication logic or API calls
-const isAuthenticated = () => {
-  return localStorage.getItem('token') !== null;
-};
+import { Link } from 'react-router-dom';
 
 function Home() {
   const navigate = useNavigate();
-  const loggedIn = isAuthenticated();
 
-  // Function to navigate to login or register pages
   const handleLogin = () => {
     navigate('/login');
   };
@@ -23,36 +14,59 @@ function Home() {
   };
 
   return (
-    <div className="home-container">
-      {/* Header component */}
-     
+    <div className="min-h-screen bg-gray-100">
+      {/* Header */}
+        
 
-      <div className="flex justify-center items-center h-screen bg-gray-100">
-        {loggedIn ? (
-          // Show User Dashboard if the user is logged in
-          <UserDashboard />
-        ) : (
-          // Show Login and Register options if the user is not logged in
-          <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-            <h1 className="text-2xl font-bold mb-4 text-center">Welcome to the Booking System</h1>
-            <p className="text-center mb-6">Please log in or register to access your dashboard.</p>
-            <div className="flex justify-around">
-              <button
-                onClick={handleLogin}
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-              >
-                Login
-              </button>
-              <button
-                onClick={handleRegister}
-                className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-              >
-                Register
-              </button>
-            </div>
+      {/* Main Content */}
+      <main className="flex items-center justify-center flex-grow min-h-[calc(100vh-4rem)]">
+        <div className="bg-white shadow-xl rounded-lg p-8 max-w-md w-full m-4">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Welcome</h2>
+            <p className="text-gray-600">
+              Choose an option below to get started with Quo-Vadis Youth week challenge 2024
+            </p>
           </div>
-        )}
-      </div>
+
+          <div className="space-y-4">
+            <button
+              onClick={handleLogin}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 ease-in-out"
+            >
+              Login to Your Account
+            </button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">or</span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleRegister}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 ease-in-out"
+            >
+              Create New Account
+            </button>
+          </div>
+
+          <div className="mt-6 text-center text-sm text-gray-600">
+            <p>
+              By continuing, you agree to our{' '}
+              <Link to="/terms" className="text-blue-600 hover:text-blue-800">
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link to="/privacy" className="text-blue-600 hover:text-blue-800">
+                Privacy Policy
+              </Link>
+            </p>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

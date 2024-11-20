@@ -14,6 +14,7 @@ function BookingForm() {
     employment_status: ''
   });
 
+  // Handle input change
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -31,8 +32,44 @@ function BookingForm() {
 
   return (
     <form onSubmit={handleSubmit} className="p-4 bg-white rounded shadow-md">
-      {/* Add input fields for each form item */}
-      <button type="submit" className="mt-4 bg-blue-500 text-white py-2 px-4 rounded">Submit</button>
+      <label>
+        Full Name:
+        <input
+          type="text"
+          name="full_name"
+          value={formData.full_name}
+          onChange={handleChange}
+          className="border p-2 rounded w-full"
+        />
+      </label>
+      
+      <label>
+        ID Number:
+        <input
+          type="text"
+          name="id_number"
+          value={formData.id_number}
+          onChange={handleChange}
+          className="border p-2 rounded w-full"
+        />
+      </label>
+      
+      <label>
+        Date of Birth:
+        <input
+          type="date"
+          name="dob"
+          value={formData.dob}
+          onChange={handleChange}
+          className="border p-2 rounded w-full"
+        />
+      </label>
+
+      {/* Add similar inputs for the other formData fields */}
+
+      <button type="submit" className="mt-4 bg-blue-500 text-white py-2 px-4 rounded">
+        Submit
+      </button>
     </form>
   );
 }

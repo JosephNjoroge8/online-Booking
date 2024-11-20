@@ -16,16 +16,15 @@ function App() {
       <div className="App">
         {/* Header component with logo and navigation links */}
         <Header />
-        
         <div className="container mx-auto p-4">
           {/* Routes for navigating between different pages */}
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/home" element={<Home />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
             <Route path="/booking-form" element={<BookingForm />} />
-            <Route path="/user-dashboard" element={<UserDashboard />} />
-            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+           <Route path="/userdashboard" element={<UserDashboard />} /> 
+            <Route path="/admindashboard" element={<AdminDashboard />} />
             <Route path="/booking-status" element={<BookingStatus />} />
           </Routes>
         </div>

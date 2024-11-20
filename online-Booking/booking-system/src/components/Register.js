@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import axios from 'axios'; // Import axios
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate hook
 
 function Register() {
+  const navigate = useNavigate(); // Initialize navigate function
+  
   // State for form data
   const [userData, setUserData] = useState({
     id_number: '',
@@ -15,20 +18,20 @@ function Register() {
   const handleChange = (e) => {
     setUserData({ ...userData, [e.target.name]: e.target.value });
   };
- 
+  
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+   
     // Log the user data to verify it's being populated correctly
     console.log('User Data before submission:', userData);
-  
+   
     // Check if all required fields are filled
     if (!userData.full_name || !userData.id_number || !userData.email || !userData.parish || !userData.password) {
       alert('Please fill all required fields.');
       return;
     }
-  
+   
     // Create FormData object for sending multipart/form-data
     const formData = new FormData();
     for (const key in userData) {
@@ -38,12 +41,12 @@ function Register() {
         console.error(`Missing field: ${key}`);
       }
     }
-  
+   
     // Log the FormData to ensure it is correctly formatted
     for (let pair of formData.entries()) {
       console.log(pair[0]+ ', ' + pair[1]);
     }
-  
+   
     try {
       // Call the register API to register the user
       const response = await axios.post('http://127.0.0.1:5000/register', formData, {
@@ -52,6 +55,9 @@ function Register() {
         },
       });
       alert(response.data.message); // Show success message
+      
+      // After successful registration, navigate to login page
+      navigate('/login'); // Assuming '/login' is your login route
     } catch (error) {
       console.error('Error registering user:', error);
       alert('Registration failed. Please try again.');
