@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate hook
+import { useNavigate } from 'react-router-dom';
 
 function Register() {
-  const navigate = useNavigate(); // Initialize navigate function
-  
-  // State for form data
+  const navigate = useNavigate();
   const [userData, setUserData] = useState({
     id_number: '',
     full_name: '',
@@ -14,53 +12,58 @@ function Register() {
     password: '',
   });
 
-  // Handle form field changes
   const handleChange = (e) => {
     setUserData({ ...userData, [e.target.name]: e.target.value });
   };
-  
-  // Handle form submission
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-   
-    // Log the user data to verify it's being populated correctly
-    console.log('User Data before submission:', userData);
-   
-    // Check if all required fields are filled
+
+    // Field validation
     if (!userData.full_name || !userData.id_number || !userData.email || !userData.parish || !userData.password) {
       alert('Please fill all required fields.');
       return;
     }
-   
-    // Create FormData object for sending multipart/form-data
-    const formData = new FormData();
-    for (const key in userData) {
-      if (userData[key]) {
-        formData.append(key, userData[key]);
-      } else {
-        console.error(`Missing field: ${key}`);
-      }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userData.email)) {
+      alert('Please enter a valid email address.');
+      return;
     }
-   
-    // Log the FormData to ensure it is correctly formatted
-    for (let pair of formData.entries()) {
-      console.log(pair[0]+ ', ' + pair[1]);
+
+    if (userData.password.length < 6) {
+      alert('Password must be at least 6 characters long.');
+      return;
     }
-   
+
     try {
-      // Call the register API to register the user
-      const response = await axios.post('http://127.0.0.1:5000/register', formData, {
+      // Send data to backend to register the user
+      const response = await axios.post('http://127.0.0.1:5000/auth/register', userData, {
         headers: {
-          'Content-Type': 'multipart/form-data',  // Ensure the correct header for FormData
+          'Content-Type': 'application/json',
         },
+        withCredentials: true, // Send cookies along with the request
       });
+
       alert(response.data.message); // Show success message
-      
-      // After successful registration, navigate to login page
-      navigate('/login'); // Assuming '/login' is your login route
+
+      // Now, login the user after successful registration
+      const loginResponse = await axios.post('http://127.0.0.1:5000/auth/login', {
+        id_number: userData.id_number,
+        password: userData.password,
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        withCredentials: true, // Ensure the session cookie is sent with the request
+      });
+
+      alert(loginResponse.data.message); // Success message after login
+      navigate('/userdashboard'); // Redirect to user dashboard after login
     } catch (error) {
-      console.error('Error registering user:', error);
-      alert('Registration failed. Please try again.');
+      console.error('Error registering or logging in user:', error);
+      alert(
+        error.response?.data?.message || 'Registration or login failed. Please try again.'
+      );
     }
   };
 

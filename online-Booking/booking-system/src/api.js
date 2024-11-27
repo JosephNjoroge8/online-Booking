@@ -1,148 +1,90 @@
 import axios from 'axios';
 
-// Base URL for the API
-const API_URL = 'http://127.0.0.1:5000';
-
-// Create an axios instance with default configuration
+// Create axios instance with default configuration
 const apiClient = axios.create({
-  baseURL: API_URL,
-  timeout: 30000, // Increased timeout to 30 seconds
-  headers: {
-    Accept: 'application/json',
-  },
+  baseURL: 'http://127.0.0.1:5000',
+  withCredentials: true,
+  timeout: 30000,
+  headers: { 'Content-Type': 'application/json' },
 });
 
-// Error handling function with better logging for debugging
+// Add interceptors for debugging (can be disabled for production)
+apiClient.interceptors.request.use(
+  (config) => {
+    console.log('🔍 Request:', config);
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+apiClient.interceptors.response.use(
+  (response) => {
+    console.log('✅ Response:', response);
+    return response;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Generic error handling function
 const handleApiError = (error) => {
   if (error.response) {
-    // Server responded with a status outside the 2xx range
-    console.error('API Response Error:', error.response);
-    const errorMessage = error.response.data.error || 'An error occurred';
-    throw new Error(errorMessage);
-  } else if (error.request) {
-    // No response received from the server
-    console.error('API Request Error:', error.request);
-    throw new Error('No response from server. Please check your connection.');
-  } else {
-    // Request setup triggered an error
-    console.error('API Setup Error:', error.message);
-    throw new Error('Error setting up request. Please try again.');
+    const message = error.response.data.error || 'An error occurred';
+    throw new Error(message);
   }
+  if (error.request) {
+    throw new Error('No response from server. Check your connection.');
+  }
+  throw new Error('Request setup error. Please try again.');
 };
 
-// Function to register a new user (No image handling)
-export const registerUser = async (userData) => {
-  try {
-    const formData = new FormData();
-    
-    // Append data to FormData object
-    formData.append('full_name', userData.full_name);
-    formData.append('id_number', userData.id_number);
-    formData.append('email', userData.email);
-    formData.append('parish', userData.parish);
-    formData.append('password', userData.password);
-
-    // Directly use axios to post the formData
-    const response = await axios.post(`${API_URL}/register`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data', // Ensure correct content type for FormData
-      },
-    });
-
-    return response.data;  // Return response data
-  } catch (error) {
-    console.error('Error occurred during registration:', error);
-    handleApiError(error);  // Call the error handler
-    throw error; // Re-throw the error for further handling
-  }
-};
-
-// Login function with token storage
-export const loginUser = async (credentials) => {
-  try {
-    const response = await axios.post(`${API_URL}/login`, credentials, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    // Save the token if login is successful
-    if (response.data.token) {
-      localStorage.setItem('authToken', response.data.token);  // Store token in localStorage
+// API Services
+export const api = {
+  get: async (url, params = {}) => {
+    try {
+      const response = await apiClient.get(url, { params });
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
     }
-
-    return response;
-  } catch (error) {
-    console.error('Login error:', error.response?.data);
-    throw error;
-  }
-};
-
-// Function to get user profile with token authorization
-export const getUserProfile = async (userId, token) => {
-  try {
-    const response = await apiClient.get(`/users/${userId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    return response.data;
-  } catch (error) {
-    handleApiError(error);
-  }
-};
-
-// Function to update user profile with token authorization
-export const updateUserProfile = async (userId, userData, token) => {
-  try {
-    let data;
-    let headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
-
-    // If updating with a file, use FormData
-    if (userData.image_url) {
-      data = new FormData();
-      Object.keys(userData).forEach((key) => {
-        if (userData[key] !== null && userData[key] !== undefined) {
-          data.append(key, userData[key]);
-        }
-      });
-      headers['Content-Type'] = 'multipart/form-data';
-    } else {
-      // Use JSON for text data
-      data = userData;
+  },
+  post: async (url, data = {}) => {
+    try {
+      const response = await apiClient.post(url, data);
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
     }
-
-    // Send PUT request to update the user profile
-    const response = await apiClient.put(`/users/${userId}`, data, { headers });
-    return response.data;
-  } catch (error) {
-    handleApiError(error);
-  }
+  },
+  put: async (url, data = {}) => {
+    try {
+      const response = await apiClient.put(url, data);
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+  delete: async (url) => {
+    try {
+      const response = await apiClient.delete(url);
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
 };
 
-// Function to check admin authentication status
-export const checkAdminAuth = async (token) => {
-  try {
-    const response = await apiClient.get('/api/admin/check-auth', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Admin Authentication error:', error);
-    handleApiError(error);  // Handle error
-    throw error;  // Rethrow the error for further handling
-  }
-};
-
-// Export all functions as part of the api object
-const api = {
-  registerUser,
-  loginUser,
-  getUserProfile,
-  updateUserProfile,
-  checkAdminAuth,  // Add the checkAdminAuth function
-};
+// Specific API Endpoints
+export const getDashboard = () => api.get('/auth/dashboard');
+export const updateUserProfile = (userId, userData) => api.put(`/auth/dashboard/${userId}`, userData);
+export const loginUser = (credentials) => api.post('/auth/login', credentials);
+export const logoutUser = () => api.post('/auth/logout');
+export const getTableData = (tableName) => api.get(`/admin/tables/${tableName}`);
+export const updateRecord = (tableName, recordId, data) => api.put(`/admin/tables/${tableName}/${recordId}`, data);
+export const deleteRecord = (tableName, recordId) => api.delete(`/admin/tables/${tableName}/${recordId}`);
+export const createNewAdmin = (adminData) => api.post('/admin/create-admin', adminData);
+export const getRegisteredUsers = () => api.get('/admin/users');
+export const deleteUser = (userId) => api.delete(`/admin/users/${userId}`);
+export const sortUsers = (sortBy = 'full_name') => api.get('/admin/users/sort', { sort_by: sortBy });
+export const getDashboardStats = () => api.get('/admin/dashboard-stats');
 
 export default api;

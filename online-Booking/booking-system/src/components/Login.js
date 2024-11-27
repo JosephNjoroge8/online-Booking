@@ -1,54 +1,51 @@
 import React, { useState } from 'react';
-import { loginUser } from '../api';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 function Login() {
   const navigate = useNavigate();
-  const [credentials, setCredentials] = useState({
-    id_number: '',
-    password: ''
-  });
-
+  const [credentials, setCredentials] = useState({ id_number: '', password: '' });
   const [errorMessage, setErrorMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
     setCredentials({ ...credentials, [e.target.name]: e.target.value });
-    setErrorMessage(''); // Clear any previous error messages
+    setErrorMessage('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    if (!credentials.id_number.trim() || !credentials.password.trim()) {
+      setErrorMessage('Please fill in both ID number and password.');
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage('');
+
     try {
-      const response = await loginUser(credentials);
+      const response = await axios.post('http://127.0.0.1:5000/auth/login', credentials, {
+        withCredentials: true,
+      });
 
-      // Extract role from response
-      const { token, role } = response.data;
+      console.log('Login response:', response.data); // Debug log
 
-      // Store token and role in localStorage
-      localStorage.setItem('token', token);
-      localStorage.setItem('role', role);
-      localStorage.setItem('user_id', credentials.id_number);
-
-      // Redirect based on role
-      if (role === 'Admin') {
-        navigate('/admindashboard');
-      } else if (role === 'User') {
-        navigate('/userdashboard');
-      } else {
-        navigate('/home'); // Fallback redirect
-      }
+      // Redirect to the user dashboard if login is successful
+      navigate('/userdashboard');
     } catch (error) {
-      console.error("Error logging in:", error);
+      console.error('Login error:', error);
 
-      // Set error message based on the type of error
       if (error.response) {
-        setErrorMessage(error.response.data.message || 'Login failed. Please check your credentials.');
+        const errorMsg = error.response.data.message;
+        setErrorMessage(errorMsg || 'Login failed. Please check your credentials.');
       } else if (error.request) {
         setErrorMessage('No response from server. Please check your internet connection.');
       } else {
         setErrorMessage('An error occurred. Please try again.');
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -56,13 +53,17 @@ function Login() {
     <div className="max-w-md mx-auto mt-10">
       <form onSubmit={handleSubmit} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
         <h2 className="text-2xl mb-6 text-center">Login</h2>
-        
+
         {errorMessage && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-            {errorMessage}
+          <div
+            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
+            role="alert"
+          >
+            <p className="font-bold">Error</p>
+            <p className="block sm:inline">{errorMessage}</p>
           </div>
         )}
-        
+
         <div className="mb-4">
           <label className="block text-gray-700 text-sm font-bold mb-2">
             ID Number
@@ -70,13 +71,15 @@ function Login() {
               type="text"
               name="id_number"
               onChange={handleChange}
-              placeholder="ID Number"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              value={credentials.id_number}
+              placeholder="Enter your ID number"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mt-1"
               required
+              disabled={isLoading}
             />
           </label>
         </div>
-        
+
         <div className="mb-6">
           <label className="block text-gray-700 text-sm font-bold mb-2">
             Password
@@ -84,19 +87,24 @@ function Login() {
               type="password"
               name="password"
               onChange={handleChange}
-              placeholder="Password"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
+              value={credentials.password}
+              placeholder="Enter your password"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline mt-1"
               required
+              disabled={isLoading}
             />
           </label>
         </div>
-        
-        <div className="flex items-center justify-center">
+
+        <div className="flex items-center justify-between">
           <button
             type="submit"
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            className={`w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${
+              isLoading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            disabled={isLoading}
           >
-            Login
+            {isLoading ? 'Logging in...' : 'Login'}
           </button>
         </div>
       </form>
