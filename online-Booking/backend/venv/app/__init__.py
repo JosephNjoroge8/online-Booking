@@ -49,7 +49,7 @@ def create_app():
     # Enable CORS
     frontend_url = os.environ.get('FRONTEND_URL' )
     
-    CORS(app, supports_credentials=True, resources={r"/*": {"origins": frontend_url}})
+    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://127.0.0.1:3000"}})
     '''
     CORS(app, 
          resources={

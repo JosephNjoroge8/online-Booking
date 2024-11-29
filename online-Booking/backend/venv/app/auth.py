@@ -1,5 +1,5 @@
 import re
-from flask import Blueprint, request, jsonify, session, current_app, make_response
+from flask import Blueprint, request, jsonify, session, current_app, redirect, make_response
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import User
 from datetime import timedelta
@@ -84,20 +84,27 @@ def login():
         # Set the session as permanent (lasts as long as PERMANENT_SESSION_LIFETIME)
         session.permanent = True
 
-        # Create response to set cookie explicitly
+        # Create response with user dashboard data
+        user_dashboard = {
+            "id_number": user.id_number,
+            "name": user.full_name,
+            "email": user.email,
+            "parish": user.parish,
+            "registration_date": user.registration_date.strftime("%Y-%m-%d") if user.registration_date else None,
+            "role": user.role.value
+        }
+
+        # Ensure session cookie is set properly
         response = make_response(jsonify({
             "message": "Login successful",
-            "id_number": user.id_number,
-            "full_name": user.full_name,
-            "role": user.role.value
+            "user_dashboard": user_dashboard
         }))
         
-        # Ensure session cookie is set properly
         response.set_cookie(
             'session',
             session.sid,
-            max_age=['PERMANENT_SESSION_LIFETIME'],  # Set max age as the lifetime of the session
-            expires=session.permanent,  # Set the expiry based on session permanence
+            max_age=current_app.permanent_session_lifetime.total_seconds(),
+            expires=session.permanent,
             httponly=True,
             samesite='None',
             secure=False  # Ensure 'secure=True' is only used in production with HTTPS
@@ -109,49 +116,45 @@ def login():
         current_app.logger.error(f"Login error: {str(e)}")
         return jsonify({"message": "Login failed due to an error"}), 500
 
-
-# Profile route to get user profile details
+# Simplified dashboard route without authentication check
 @auth_bp.route('/dashboard', methods=['GET'])
 def dashboard():
     try:
-        # Log session keys for debugging
-        current_app.logger.debug(f"Session keys: {list(session.keys())}")
-        
         # Retrieve id_number from session
         id_number = session.get('id_number')
         
         if not id_number:
-            current_app.logger.warning("Session expired or user not logged in.")
-            return jsonify({"error": {"code": 401, "message": "Session expired or user not logged in"}}), 401
+            # If no session, return a default or initial dashboard state
+            return jsonify({
+                "message": "No active session",
+                "status": "unauthenticated"
+            }), 200
 
         # Query user by id_number
         user = User.query.filter_by(id_number=id_number).first()
         
         if not user:
-            current_app.logger.warning(f"User with id_number {id_number} not found.")
-            return jsonify({"error": {"code": 404, "message": "User not found"}}), 404
-
-        # Function to format dates
-        def format_date(date):
-            return date.strftime("%Y-%m-%d") if date else None
+            return jsonify({
+                "message": "User not found",
+                "status": "unauthenticated"
+            }), 200
 
         # Construct the dashboard response
         user_dashboard = {
             "id_number": user.id_number,
             "name": user.full_name,
             "email": user.email,
-            "parish": user.parish,  # Assuming relevant for your use case
-            "registration_date": format_date(user.registration_date),
-            "dashboard_data": user.dashboard_data or "No additional data available"
+            "parish": user.parish,
+            "registration_date": user.registration_date.strftime("%Y-%m-%d") if user.registration_date else None,
+            "role": user.role.value
         }
 
         current_app.logger.info(f"Dashboard data retrieved for user {id_number}.")
         return jsonify(user_dashboard), 200
 
     except Exception as e:
-        current_app.logger.error(f"Unexpected error: {str(e)}")
-        return jsonify({"error": {"code": 500, "message": "An unexpected error occurred"}}), 500
-
+        current_app.logger.error(f"Unexpected error in dashboard: {str(e)}")
+        return jsonify({"message": "An unexpected error occurred"}), 500
 # Logout route to clear the session
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
